@@ -10,9 +10,9 @@
 
 int main() {
     //创建套接字
-    int sockfd;
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(sockfd == -1) {
+    int sock_fd;
+    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sock_fd == -1) {
         perror("socket");
         exit(-1);
     }
@@ -33,7 +33,7 @@ int main() {
     bzero(&(dest_addr.sin_zero), 8);
 
     //连接服务器端，无需bind，会自动为sockfd绑定一个端口
-    if(connect(sockfd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr)) == -1){
+    if(connect(sock_fd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr)) == -1){
         perror("connect");
         exit(-1);
     }
@@ -41,17 +41,17 @@ int main() {
     //发送
     char *msg = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\n\r\n";
     // char msg[65535] = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\nAccept-Encoding: gzip, deflate, br\r\nAccept-Language: en,zh-CN;q=0.9,zh;q=0.8,en-US;q=0.7\r\nUser-Agent: Mozilla/5.0 (X11; CrOS x86_64 14324.13.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.20 Safari/537.36\r\n\r\n";
-    int bytes_sent = send(sockfd, msg, strlen(msg), 0);
+    int bytes_sent = send(sock_fd, msg, strlen(msg), 0);
 
 
     struct timeval timeout = {3, 0};
-    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(struct timeval));
+    setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(struct timeval));
     
     //接收
     char recv_buffer[1024];
     int total_recv_bytes = 0, bytes_recv = 0;
     while(1){
-        if((bytes_recv = recv(sockfd, recv_buffer, 1024, 0)) == -1){
+        if((bytes_recv = recv(sock_fd, recv_buffer, 1024, 0)) == -1){
             if(errno == EWOULDBLOCK || errno == EAGAIN){
                 printf("recv timeout..\n");
                 break;
@@ -84,7 +84,7 @@ int main() {
     // printf("%s\n", recv_buffer);
 
     //关闭连接
-    close(sockfd);
+    close(sock_fd);
 
     return 0;
     
