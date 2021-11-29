@@ -26,10 +26,10 @@ int main() {
     //创建服务器端结构体
     struct sockaddr_in dest_addr;
     dest_addr.sin_family = AF_INET;
-    dest_addr.sin_port = htons(63222);
+    dest_addr.sin_port = htons(12345);
     // inet_addr已废弃，应使用inet_aton或inet_pton
     // dest_addr.sin_addr.s_addr = inet_addr("104.193.88.77");
-    inet_pton(AF_INET, "0.0.0.0", &dest_addr.sin_addr.s_addr);
+    inet_pton(AF_INET, "101.34.179.178", &dest_addr.sin_addr.s_addr);
     bzero(&(dest_addr.sin_zero), 8);
 
     //连接服务器端，无需bind，会自动为sockfd绑定一个端口
@@ -39,7 +39,7 @@ int main() {
     }
 
     //发送
-    char *msg = "GET / HTTP/1.1\r\nHost: 0.0.0.0\r\n\r\n";
+    char *msg = "GET / HTTP/1.1\r\nHost: 101.34.179.178\r\n\r\n";
     // char msg[65535] = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\nAccept-Encoding: gzip, deflate, br\r\nAccept-Language: en,zh-CN;q=0.9,zh;q=0.8,en-US;q=0.7\r\nUser-Agent: Mozilla/5.0 (X11; CrOS x86_64 14324.13.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.20 Safari/537.36\r\n\r\n";
     int bytes_sent = send(sock_fd, msg, strlen(msg), 0);
 

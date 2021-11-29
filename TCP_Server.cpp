@@ -1,8 +1,15 @@
 #include<iostream>
+#include<string>
+#include<fstream>
+
+#include<fcntl.h>
 #include<arpa/inet.h>
 #include<string.h>
 #include<unistd.h>
 #include<sys/wait.h>
+#include<sys/stat.h>
+
+using namespace std;
 
 int main(){
     int sock_fd, new_fd;
@@ -16,8 +23,9 @@ int main(){
     }
 
     my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(63222);
-    inet_pton(AF_INET, "0.0.0.0", &my_addr.sin_addr.s_addr);
+    my_addr.sin_port = htons(12345);
+    // my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    inet_pton(AF_INET, "10.0.4.11", &my_addr.sin_addr.s_addr);
     bzero(&(my_addr.sin_zero), 8);
 
     if(bind(sock_fd, reinterpret_cast<struct sockaddr*>(&my_addr), sizeof(struct sockaddr)) == -1){
@@ -37,17 +45,54 @@ int main(){
             perror("accept");
             continue;            
         }
+        
+        cout << "server: got connection from " << inet_ntoa(other_addr.sin_addr) << endl;
 
-        std::cout << "server: got connection from " << inet_ntoa(other_addr.sin_addr) << std::endl;
+
+        string send_buf;
+        //响应报文头部处理开始
+        string header;
+        header += "HTTP/1.1 200 OK\r\n";
+        struct stat src_buf;
+        string filename = "aHtmlFile.html";
+        if(stat(filename.c_str(), &src_buf) < 0){
+            perror("fileStat");
+            exit(0);
+        }
+        header += "Content-Type: text/html;charset=utf-8\r\n";
+        header += "Content-Length: " + to_string(src_buf.st_size) + "\r\n";
+        header += "Server: AJL's Webserver\r\n";
+        header += "\r\n";
+        //响应报文头部处理结束
+        send_buf += header;
+
+        //打开资源文件
+        ifstream file(filename, ios::in);
+        if(!file){
+            perror("fileOpen");
+            exit(0);
+        }
+        // int src_fd = open(filename.c_str(), O_RDONLY, 0);
+        // if(src_fd < 0){
+        //     perror("fileOpen");
+        //     exit(0);
+        // }
+        string file_buf;
+        string line;
+        while(getline(file, line)){
+            file_buf += line + "\n";
+        }
+        //关闭资源文件
+        file.close();
+
+        send_buf += file_buf;
+
         char recv_buf[65535];
-        char send_buf[65535];
-        char html_buf[1024] = "<html><body><h1>这是我的第一个网页！</h1></body></html>";
-        sprintf(send_buf, "HTTP/1.1 200 OK\r\nContent-Type: text/html;charset=utf-8\r\nContent-Length: %lu\r\n\r\n%s", strlen(html_buf), html_buf);
         
         if(!fork()){
             recv(new_fd, recv_buf, 65535, 0);
             std::cout << recv_buf << std::endl;    
-            if(send(new_fd, send_buf, strlen(send_buf), 0) == -1){
+            if(send(new_fd, send_buf.c_str(), strlen(send_buf.c_str()), 0) == -1){
                 perror("send");
                 close(new_fd);
                 exit(0);
