@@ -1,6 +1,6 @@
 #include<iostream>
 #include<string>
-#include<fstream>
+// #include<fstream>
 
 #include<fcntl.h>
 #include<arpa/inet.h>
@@ -53,42 +53,46 @@ int main(){
         //响应报文头部处理开始
         string header;
         header += "HTTP/1.1 200 OK\r\n";
-        struct stat src_buf;
+        struct stat src_stat;
         string filename = "aHtmlFile.html";
-        if(stat(filename.c_str(), &src_buf) < 0){
+        if(stat(filename.c_str(), &src_stat) < 0){
             perror("fileStat");
             exit(0);
         }
         header += "Content-Type: text/html;charset=utf-8\r\n";
-        header += "Content-Length: " + to_string(src_buf.st_size) + "\r\n";
+        header += "Content-Length: " + to_string(src_stat.st_size) + "\r\n";
         header += "Server: AJL's Webserver\r\n";
         header += "\r\n";
         //响应报文头部处理结束
         send_buf += header;
 
         //打开资源文件
-        ifstream file(filename, ios::in);
-        if(!file){
-            perror("fileOpen");
-            exit(0);
-        }
-        // int src_fd = open(filename.c_str(), O_RDONLY, 0);
-        // if(src_fd < 0){
+        // ifstream file(filename, ios::in);
+        // if(!file){
         //     perror("fileOpen");
         //     exit(0);
         // }
-        string file_buf;
-        string line;
-        while(getline(file, line)){
-            file_buf += line + "\n";
+        int src_fd = open(filename.c_str(), O_RDONLY);
+        if(src_fd < 0){
+            perror("fileOpen");
+            exit(0);
         }
+        //有多种读取方法，<</getline/成员函数getline/成员函数get等等，目前来说getline最好用。
+        //听说商用的代码使用系统函数那套比较多，改成open版本的。
+        // string file_buf;
+        // string line;
+        // while(getline(file, line)){
+        //     file_buf += line + "\n";
+        // }
+        char file_buf[1024];
+        ssize_t read_size = read(src_fd, file_buf, 1024);
+        cout << read_size << endl;
         //关闭资源文件
-        file.close();
-
+        close(src_fd);
+        // send_buf += string(file_buf, file_buf + read_size);
         send_buf += file_buf;
 
         char recv_buf[65535];
-        
         if(!fork()){
             recv(new_fd, recv_buf, 65535, 0);
             std::cout << recv_buf << std::endl;    
