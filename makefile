@@ -1,4 +1,4 @@
-TCP_Server:TCP_Server.cpp
-	g++ -o TCP_Server TCP_Server.cpp -lpthread
+main:
+	g++ -o main Main.cpp TCP_Server.cpp -lpthread
 clean:
-	rm -f TCP_Server
+	rm -f main
