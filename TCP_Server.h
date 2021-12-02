@@ -1,16 +1,16 @@
 #pragma once
 
-#include<iostream>
-#include<string>
+#include <iostream>
+#include <string>
 // #include<fstream>
 
-#include<pthread.h>
-#include<fcntl.h>
-#include<arpa/inet.h>
-#include<string.h>
-#include<unistd.h>
-#include<sys/wait.h>
-#include<sys/stat.h>
+#include <pthread.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
 
 using namespace std;
 
