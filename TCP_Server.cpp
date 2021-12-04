@@ -45,7 +45,7 @@ void Server::ServerStart() {
         }
 
     }
-    while(waitpid(-1, NULL, WNOHANG) > 0);
+    // while(waitpid(-1, NULL, WNOHANG) > 0);
 }
 
 void* Server::httpRecvandSend(void *arg) {

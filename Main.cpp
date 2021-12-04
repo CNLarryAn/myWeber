@@ -8,8 +8,10 @@ int main() {
         perror("config error!");
         exit(1);
     }
-
-    Server myServer(p_config->GetString("ip"), p_config->GetInt("listenport", 12345));
+    const char *ip = p_config->GetString("ip");
+    int port = p_config->GetInt("listenport", 12345);
+    
+    Server myServer(ip, port);
     myServer.ServerStart();
     return 0;
 }
