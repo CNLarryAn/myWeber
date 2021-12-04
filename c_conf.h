@@ -22,13 +22,15 @@ public:
 
 private:
     //用智能指针替换原本的内嵌类垃圾回收
-    static shared_ptr<CConfig> m_instance;
+    static unique_ptr<CConfig> m_instance;
+    // static CConfig* m_instance;
 public:
     static CConfig* GetInstence() {
         if(m_instance == nullptr) {
             //双检测，这里应该加锁保证线程安全，先不加了
             if(m_instance == nullptr) {
                 m_instance.reset(new CConfig);
+                // m_instance = new CConfig; 
             }
             //解锁
         }
@@ -41,10 +43,12 @@ public:
     //     ~CGarbo() {
     //         if(CConfig::m_instance){
     //             delete CConfig::m_instance;
+    //             CConfig::m_instance = nullptr;
     //         }
     //     }
     // };
     // static CGarbo Garbo;
+    
     //好像可以用智能指针做垃圾回收
 
 public:
