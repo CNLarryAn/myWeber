@@ -5,11 +5,12 @@
 // #include<fstream>
 
 #include <pthread.h>
-#include <fcntl.h>
+// #include <fcntl.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/wait.h>
+#include <sys/time.h>
+// #include <sys/wait.h>
 #include <sys/stat.h>
 
 using namespace std;
@@ -24,7 +25,7 @@ public:
     void ServerStart();
     static void* httpRecvandSend(void *arg);
 private:
-    int sock_fd;
+    int listen_fd;
     struct sockaddr_in my_addr;
     string _ipAdress;
     uint16_t _port;

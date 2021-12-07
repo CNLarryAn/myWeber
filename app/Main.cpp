@@ -1,7 +1,7 @@
 #include "TCP_Server.h"
 #include "c_conf.h"
 
-int main() {
+int main(int argc, char **argv) {
 
     CConfig *p_config = CConfig::GetInstence();
     if(p_config->Load("myWebServer.conf") == false) {
