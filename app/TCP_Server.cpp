@@ -86,6 +86,9 @@ void Server::ServerStart() {
                     perror("pthread_create");
                     continue;
                 }
+                FD_CLR(client_fd, &all_set);
+                client[i] = -1;
+                
                 if(--nready <= 0)
                     break;
             }
@@ -99,16 +102,16 @@ void* Server::httpRecvandSend(void *arg) {
     int client_fd = *((int*) arg);
     struct timeval timeout = {3, 0};
     setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(struct timeval));
-    char recv_buf[65535];
-    while(recv(client_fd, recv_buf, 65535, 0) > 0) {
-        std::cout << recv_buf << std::endl;
-        memset(recv_buf, 0, 65535);
+    HttpData cli_Handle(client_fd);
+    while(cli_Handle.HandleRead() > 0) {
+        cli_Handle.InfoPrint();
+
         string send_buf;
         //响应报文头部处理开始
         string header;
         header += "HTTP/1.1 200 OK\r\n";
         struct stat src_stat;
-        string filename = "aHtmlFile.html";
+        string filename = "index.html";
         if(stat(filename.c_str(), &src_stat) < 0) {
             perror("fileStat");
             return nullptr;

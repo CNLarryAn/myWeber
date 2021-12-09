@@ -13,6 +13,9 @@
 // #include <sys/wait.h>
 #include <sys/stat.h>
 
+#include "HttpData.h"
+
+
 using namespace std;
 
 
