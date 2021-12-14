@@ -18,12 +18,20 @@ void Server::ServerStart() {
     inet_pton(AF_INET, _ipAdress.c_str(), &my_addr.sin_addr.s_addr);
     bzero(&(my_addr.sin_zero), 8);
 
+    /*********************************************************************************/
+    //每个TCP服务器都应该设置SO_REUSEADDR，保证地址复用，防止有处于TIME_WAIT状态的连接时bind失败。
+    int reuseaddr = 1;
+    if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, static_cast<const void*>(&reuseaddr), sizeof(reuseaddr)) == -1) {
+        char *perrorinfo = strerror(errno);
+        printf("setsockopt(SO_REUSEADDR)返回值为%d, 错误码为：%d， 错误信息为：%s；\n", -1, errno, perrorinfo);
+    }
+
     if(bind(listen_fd, reinterpret_cast<struct sockaddr*>(&my_addr), sizeof(struct sockaddr)) == -1) {
         perror("bind");
         exit(1);
     }
 
-    if(listen(listen_fd, 10) == -1) {
+    if(listen(listen_fd, 300) == -1) {
         perror("listen");
         exit(1);
     }
@@ -104,73 +112,9 @@ void* Server::httpRecvandSend(void *arg) {
     setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(struct timeval));
     HttpData cli_Handle(client_fd);
     while(cli_Handle.HandleRead() > 0) {
+        cli_Handle.ParseRequest();
         cli_Handle.InfoPrint();
-
-        string send_buf;
-        //响应报文头部处理开始
-        string header;
-        header += "HTTP/1.1 200 OK\r\n";
-        struct stat src_stat;
-        string filename = "index.html";
-        if(stat(filename.c_str(), &src_stat) < 0) {
-            perror("fileStat");
-            return nullptr;
-        }
-        header += "Content-Type: text/html;charset=utf-8\r\n";
-        header += "Content-Length: " + to_string(src_stat.st_size) + "\r\n";
-        header += "Server: AJL's Webserver\r\n";
-        header += "\r\n";
-        //响应报文头部处理结束
-        send_buf += header;
-
-        //打开资源文件
-        // ifstream file(filename, ios::in);
-        // if(!file){
-        //     perror("fileOpen");
-        //     exit(0);
-        // }
-
-        // int src_fd = open(filename.c_str(), O_RDONLY);
-        // if(src_fd < 0){
-        //     perror("fileOpen");
-        //     exit(0);
-        // }
-        FILE* src_fp;
-        src_fp = fopen(filename.c_str(), "r");
-        if(src_fp == nullptr) {
-            perror("fopen");
-            return nullptr;
-        }
-        //有多种读取方法，<</getline/成员函数getline/成员函数get等等，目前来说getline最好用。
-        //听说商用的代码使用系统函数那套比较多，添加open和fopen版本的。
-        // string file_buf;
-        // string line;
-        // while(getline(file, line)){
-        //     file_buf += line + "\n";
-        // }
-
-        // char file_buf[1024];
-        // ssize_t read_size = read(src_fd, file_buf, 1024);
-        // cout << read_size << endl;
-        char line_buf[500];
-        string file_buf;
-        while(!feof(src_fp)) {
-            if(fgets(line_buf, 500, src_fp) == nullptr) {
-                continue;
-            }
-            file_buf += line_buf;
-        }
-        //关闭资源文件
-        // close(src_fd);
-        fclose(src_fp);
-        // send_buf += string(file_buf, file_buf + read_size);
-        send_buf += file_buf;
-
-        if(send(client_fd, send_buf.c_str(), strlen(send_buf.c_str()), 0) == -1) {
-            perror("send");
-            close(client_fd);
-            return nullptr;
-        }
+        cli_Handle.HandleWrite();
     }   
     close(client_fd);
     cout << "closed!!!!!" << endl;

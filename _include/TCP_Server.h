@@ -7,11 +7,11 @@
 #include <pthread.h>
 // #include <fcntl.h>
 #include <arpa/inet.h>
-#include <string.h>
-#include <unistd.h>
+// #include <string.h>
+// #include <unistd.h>
 #include <sys/time.h>
 // #include <sys/wait.h>
-#include <sys/stat.h>
+// #include <sys/stat.h>
 
 #include "HttpData.h"
 

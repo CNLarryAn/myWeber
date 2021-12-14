@@ -3,8 +3,11 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <algorithm>
 
-
+#include <unistd.h>
+#include <string.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 
 using namespace std;
@@ -27,6 +30,7 @@ public:
 public:
     ssize_t HandleRead();
     void HandleWrite();
+    void ParseRequest();
     void InfoPrint();
 };
 
