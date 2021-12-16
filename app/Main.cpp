@@ -9,11 +9,12 @@ int main(int argc, char **argv) {
         perror("config error!");
         exit(1);
     }
-    const char *ip = p_config->GetString("ip");
+    string ip = p_config->GetString("ip");
     int port = p_config->GetInt("listenport", 12345);
-    
+    string fileRoot = p_config->GetString("fileroot");
+
     //开始服务
-    Server myServer(ip, port);
+    Server myServer(ip, port, fileRoot);
     myServer.ServerStart();
     return 0;
 }

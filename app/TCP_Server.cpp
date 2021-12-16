@@ -1,8 +1,9 @@
 #include "TCP_Server.h"
 
-Server::Server(string myIpAdress, uint16_t myPort) {
-    _ipAdress = myIpAdress;
-    _port = myPort;
+Server::Server(string IpAdress, uint16_t Port, string fileRoot) {
+    _ipAdress = IpAdress;
+    _port = Port;
+    _fileRoot = fileRoot;
 }
 
 void Server::ServerStart() {
@@ -23,7 +24,7 @@ void Server::ServerStart() {
     int reuseaddr = 1;
     if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, static_cast<const void*>(&reuseaddr), sizeof(reuseaddr)) == -1) {
         char *perrorinfo = strerror(errno);
-        printf("setsockopt(SO_REUSEADDR)返回值为%d, 错误码为：%d， 错误信息为：%s；\n", -1, errno, perrorinfo);
+        printf("setsockopt(SO_REUSEADDR)返回值为%d, 错误码为:%d， 错误信息为:%s；\n", -1, errno, perrorinfo);
     }
 
     if(bind(listen_fd, reinterpret_cast<struct sockaddr*>(&my_addr), sizeof(struct sockaddr)) == -1) {
@@ -57,7 +58,7 @@ void Server::ServerStart() {
             
             struct sockaddr_in other_addr;
             sin_size = sizeof(struct sockaddr_in);
-            if((connect_fd = accept(listen_fd, reinterpret_cast<struct sockaddr*>(&other_addr), &sin_size)) == -1) {
+            if((connect_fd = accept4(listen_fd, reinterpret_cast<struct sockaddr*>(&other_addr), &sin_size, SOCK_NONBLOCK)) == -1) {
                 perror("accept");
                 continue;            
             }
@@ -90,10 +91,7 @@ void Server::ServerStart() {
             if(FD_ISSET(client_fd, &read_set)) {
                 cout << client_fd << endl;
                 pthread_t t_id;
-                if(pthread_create(&t_id, NULL, httpRecvandSend, (void*)&client_fd) != 0) {
-                    perror("pthread_create");
-                    continue;
-                }
+                httpRecvandSend(client_fd);
                 FD_CLR(client_fd, &all_set);
                 client[i] = -1;
                 
@@ -105,18 +103,17 @@ void Server::ServerStart() {
     // while(waitpid(-1, NULL, WNOHANG) > 0);
 }
 
-void* Server::httpRecvandSend(void *arg) {
+void Server::httpRecvandSend(int fd) {
 
-    int client_fd = *((int*) arg);
-    struct timeval timeout = {3, 0};
-    setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(struct timeval));
-    HttpData cli_Handle(client_fd);
+
+    // struct timeval timeout = {3, 0};
+    // setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(struct timeval));
+    HttpData cli_Handle(fd, _fileRoot);
     while(cli_Handle.HandleRead() > 0) {
         cli_Handle.ParseRequest();
         cli_Handle.InfoPrint();
         cli_Handle.HandleWrite();
     }   
-    close(client_fd);
+    close(fd);
     cout << "closed!!!!!" << endl;
-    return nullptr;
 }

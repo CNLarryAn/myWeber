@@ -1,6 +1,38 @@
 #include "HttpData.h"
 
-HttpData::HttpData(int client_fd) : _fd(client_fd) {
+pthread_once_t MimeType::once_control = PTHREAD_ONCE_INIT;
+unordered_map<string, string> MimeType::mime;
+
+void MimeType::init() {
+
+    mime[".html"] = "text/html;charset=utf-8";
+    mime[".avi"] = "video/x-msvideo";
+    mime[".bmp"] = "image/bmp";
+    mime[".c"] = "text/plain";
+    mime[".doc"] = "application/msword";
+    mime[".gif"] = "image/gif";
+    mime[".gz"] = "application/x-gzip";
+    mime[".htm"] = "text/html";
+    mime[".ico"] = "image/x-icon";
+    mime[".jpg"] = "image/jpeg";
+    mime[".png"] = "image/png";
+    mime[".txt"] = "text/plain";
+    mime[".mp3"] = "audio/mp3";
+    mime["default"] = "text/html;charset=utf-8";
+    mime[".js"] = "application/javascript";
+    mime[".css"] = "text/css";
+}
+
+std::string MimeType::getMime(const std::string &suffix) {
+
+    pthread_once(&once_control, MimeType::init);//只执行一次init()
+    if (mime.find(suffix) == mime.end())
+        return mime["default"];
+    else
+        return mime[suffix];
+}
+
+HttpData::HttpData(int client_fd, string file_root) : _fd(client_fd), _file_Root(file_root) {
 }
 
 HttpData::~HttpData() {
@@ -86,12 +118,19 @@ void HttpData::HandleWrite() {
     string header;
     header += "HTTP/1.1 200 OK\r\n";
     struct stat src_stat;
-    string filename = "index.html";
+    string filename = _file_Root + _filename;
     if(stat(filename.c_str(), &src_stat) < 0) {
+        HandleError(404, "Not Fount!");
         perror("fileStat");
         return;
     }
-    header += "Content-Type: text/html;charset=utf-8\r\n";
+    int dot_pos = _filename.find('.');
+    string filetype;
+    if (dot_pos < 0)
+        filetype = MimeType::getMime("default");
+    else
+        filetype = MimeType::getMime(_filename.substr(dot_pos));
+    header += "Content-Type: " + filetype + "\r\n";
     header += "Content-Length: " + to_string(src_stat.st_size) + "\r\n";
     header += "Server: AJL's Webserver\r\n";
     header += "\r\n";
@@ -99,34 +138,14 @@ void HttpData::HandleWrite() {
     send_buf += header;
 
     //打开资源文件
-    // ifstream file(filename, ios::in);
-    // if(!file){
-    //     perror("fileOpen");
-    //     exit(0);
-    // }
-
-    // int src_fd = open(filename.c_str(), O_RDONLY);
-    // if(src_fd < 0){
-    //     perror("fileOpen");
-    //     exit(0);
-    // }
     FILE* src_fp;
     src_fp = fopen(filename.c_str(), "r");
     if(src_fp == nullptr) {
         perror("fopen");
+        HandleError(404, "Not Found!");
         return;
     }
-    //有多种读取方法，<</getline/成员函数getline/成员函数get等等，目前来说getline最好用。
-    //听说商用的代码使用系统函数那套比较多，添加open和fopen版本的。
-    // string file_buf;
-    // string line;
-    // while(getline(file, line)){
-    //     file_buf += line + "\n";
-    // }
-
-    // char file_buf[1024];
-    // ssize_t read_size = read(src_fd, file_buf, 1024);
-    // cout << read_size << endl;
+    //有多种读取方法，听说商用的代码使用系统函数那套比较多。
     char line_buf[500];
     string file_buf;
     while(!feof(src_fp)) {
@@ -138,7 +157,7 @@ void HttpData::HandleWrite() {
     //关闭资源文件
     // close(src_fd);
     fclose(src_fp);
-    // send_buf += string(file_buf, file_buf + read_size);
+
     send_buf += file_buf;
 
     if(send(_fd, send_buf.c_str(), strlen(send_buf.c_str()), 0) == -1) {
@@ -147,6 +166,27 @@ void HttpData::HandleWrite() {
         return;
     }
 }
+
+void HttpData::HandleError(int err_num, string short_msg) {
+
+    short_msg = " " + short_msg;
+    string send_buff;
+    string body_buff, header_buff;
+    body_buff += "<html><title>哎~出错了</title>";
+    body_buff += "<body bgcolor=\"ffffff\">";
+    body_buff += to_string(err_num) + short_msg;
+    body_buff += "<hr><em> AJL's Webserver</em>\n</body></html>";
+    header_buff += "HTTP/1.1 " + to_string(err_num) + short_msg + "\r\n";
+    header_buff += "Content-Type: text/html;charset=utf-8\r\n";
+    header_buff += "Connection: Close\r\n";
+    header_buff += "Content-Length: " + to_string(body_buff.size()) + "\r\n";
+    header_buff += "Server: AJL's Webserver\r\n";
+    header_buff += "\r\n";
+    
+    send_buff += header_buff + body_buff;
+    send(_fd, send_buff.c_str(), strlen(send_buff.c_str()), 0);
+}
+
 
 void HttpData::InfoPrint() {
     
