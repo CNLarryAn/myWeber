@@ -81,6 +81,7 @@ void HttpData::ParseRequest() {
             if(pos_qm > 0) {
                 _filename = _filename.substr(0, pos_qm);
             }
+            if(_filename.back() == '/') _filename += "index.html";
         }
         else {
             _filename = "index.html";
@@ -137,34 +138,58 @@ void HttpData::HandleWrite() {
     //响应报文头部处理结束
     send_buf += header;
 
-    //打开资源文件
-    FILE* src_fp;
-    src_fp = fopen(filename.c_str(), "r");
-    if(src_fp == nullptr) {
-        perror("fopen");
+    // //打开资源文件
+    // FILE* src_fp;
+    // src_fp = fopen(filename.c_str(), "r");
+    // if(src_fp == nullptr) {
+    //     perror("fopen");
+    //     HandleError(404, "Not Found!");
+    //     return;
+    // }
+    // cout << "打开了起码！" << endl;
+    // //有多种读取方法，听说商用的代码使用系统函数那套比较多。
+    // char line_buf[500];
+    // string file_buf;
+    // while(!feof(src_fp)) {
+    //     if(fgets(line_buf, 500, src_fp) == nullptr) {
+    //         continue;
+    //     }
+    //     file_buf += line_buf;
+    // }
+    // cout << "能到这么??" << endl;
+    // //关闭资源文件
+    // // close(src_fd);
+    // fclose(src_fp);
+    int src_fd = open(filename.c_str(), O_RDONLY, 0);
+    if (src_fd < 0) {
+
         HandleError(404, "Not Found!");
         return;
     }
-    //有多种读取方法，听说商用的代码使用系统函数那套比较多。
-    char line_buf[500];
-    string file_buf;
-    while(!feof(src_fp)) {
-        if(fgets(line_buf, 500, src_fp) == nullptr) {
-            continue;
-        }
-        file_buf += line_buf;
+    void *mmapRet = mmap(NULL, src_stat.st_size, PROT_READ, MAP_PRIVATE, src_fd, 0);
+    cout << src_stat.st_size << endl;
+    close(src_fd);
+    if (mmapRet == (void *)-1) {
+        munmap(mmapRet, src_stat.st_size);
+        HandleError(404, "Not Found!");
+        return;
     }
-    //关闭资源文件
-    // close(src_fd);
-    fclose(src_fp);
+    char *src_addr = static_cast<char *>(mmapRet);
+    send_buf += string(src_addr, src_addr + src_stat.st_size);
 
-    send_buf += file_buf;
+    munmap(mmapRet, src_stat.st_size);
+    cout << send_buf.size() << endl;
+    // send_buf += file_buf;
 
-    if(send(_fd, send_buf.c_str(), strlen(send_buf.c_str()), 0) == -1) {
+    int send_len = 0;
+    send_len = writen(_fd, send_buf);
+
+    if(send_len == -1) {
         perror("send");
         close(_fd);
         return;
     }
+    cout << send_len << endl;
 }
 
 void HttpData::HandleError(int err_num, string short_msg) {
