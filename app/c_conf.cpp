@@ -56,7 +56,7 @@ bool CConfig::Load(const char *pconfName)
 
         char *ptmp = strchr(line_buf, '=');
         if(ptmp != nullptr) {
-            shared_ptr<CConfItem> p_confitem(new CConfItem);
+            unique_ptr<CConfItem> p_confitem(new CConfItem);
             memset(p_confitem.get(), 0, sizeof(CConfItem));
             strncpy(p_confitem->itemName, line_buf, static_cast<size_t>(ptmp - line_buf));
             strcpy(p_confitem->itemContent, ptmp + 1);
@@ -66,7 +66,7 @@ bool CConfig::Load(const char *pconfName)
 			Rtrim(p_confitem->itemContent);
 			Ltrim(p_confitem->itemContent);
 
-            m_ConfigItemList.push_back(p_confitem);
+            m_ConfigItemList.emplace_back(move(p_confitem));
         }
     }
 
@@ -75,18 +75,18 @@ bool CConfig::Load(const char *pconfName)
 }
 
 const char *CConfig::GetString(const char *p_itemname) {
-    for(int i = 0; i < m_ConfigItemList.size(); ++i) {
-        if(strcasecmp(m_ConfigItemList[i]->itemName, p_itemname) == 0) {
-            return m_ConfigItemList[i]->itemContent;
+    for(auto& p_confitem : m_ConfigItemList) { //不能用下标，也不能用迭代器，必须加引用，因为unique_ptr不能copy
+        if(strcasecmp(p_confitem->itemName, p_itemname) == 0) {
+            return p_confitem->itemContent;
         }
     }
     return nullptr;
 }
 
 int CConfig::GetInt(const char *p_itemname, const int def) {
-    for(int i = 0; i < m_ConfigItemList.size(); ++i) {
-        if(strcasecmp(m_ConfigItemList[i]->itemName, p_itemname) == 0) {
-            return atoi(m_ConfigItemList[i]->itemContent);
+    for(auto& p_confitem : m_ConfigItemList) {
+        if(strcasecmp(p_confitem->itemName, p_itemname) == 0) {
+            return atoi(p_confitem->itemContent);
         }
     }
     return def;

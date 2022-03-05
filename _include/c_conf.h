@@ -57,5 +57,5 @@ public:
     int GetInt(const char *p_itemname, const int def);
 
 public:
-    vector<shared_ptr<CConfItem>> m_ConfigItemList;
+    vector<unique_ptr<CConfItem>> m_ConfigItemList;
 };

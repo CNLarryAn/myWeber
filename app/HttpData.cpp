@@ -138,34 +138,14 @@ void HttpData::HandleWrite() {
     //响应报文头部处理结束
     send_buf += header;
 
-    // //打开资源文件
-    // FILE* src_fp;
-    // src_fp = fopen(filename.c_str(), "r");
-    // if(src_fp == nullptr) {
-    //     perror("fopen");
-    //     HandleError(404, "Not Found!");
-    //     return;
-    // }
-    // cout << "打开了起码！" << endl;
-    // //有多种读取方法，听说商用的代码使用系统函数那套比较多。
-    // char line_buf[500];
-    // string file_buf;
-    // while(!feof(src_fp)) {
-    //     if(fgets(line_buf, 500, src_fp) == nullptr) {
-    //         continue;
-    //     }
-    //     file_buf += line_buf;
-    // }
-    // cout << "能到这么??" << endl;
-    // //关闭资源文件
-    // // close(src_fd);
-    // fclose(src_fp);
+
     int src_fd = open(filename.c_str(), O_RDONLY, 0);
     if (src_fd < 0) {
 
         HandleError(404, "Not Found!");
         return;
     }
+    //常规文件操作需要从磁盘到页缓存再到用户主存的两次数据拷贝。而mmap操控文件，只需要从磁盘到用户主存的一次数据拷贝过程。因此在读取时mmap效率更高。
     void *mmapRet = mmap(NULL, src_stat.st_size, PROT_READ, MAP_PRIVATE, src_fd, 0);
     cout << src_stat.st_size << endl;
     close(src_fd);
@@ -179,7 +159,6 @@ void HttpData::HandleWrite() {
 
     munmap(mmapRet, src_stat.st_size);
     cout << send_buf.size() << endl;
-    // send_buf += file_buf;
 
     int send_len = 0;
     send_len = writen(_fd, send_buf);

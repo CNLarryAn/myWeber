@@ -20,7 +20,7 @@ void Server::ServerStart() {
     bzero(&(my_addr.sin_zero), 8);
 
     /*********************************************************************************/
-    //每个TCP服务器都应该设置SO_REUSEADDR，保证地址复用，防止有处于TIME_WAIT状态的连接时bind失败。
+    //每个TCP服务器都应该设置SO_REUSEADDR，保证地址复用，防止端口处于TIME_WAIT状态时bind失败然后等2分钟。
     int reuseaddr = 1;
     if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, static_cast<const void*>(&reuseaddr), sizeof(reuseaddr)) == -1) {
         char *perrorinfo = strerror(errno);
