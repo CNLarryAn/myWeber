@@ -1,9 +1,9 @@
 #pragma once
 #include "EventLoop.h"
-#include "base/Condition.h"
-#include "base/MutexLock.h"
-#include "base/Thread.h"
-#include "base/noncopyable.h"
+#include "Condition.h"
+#include "MutexLock.h"
+#include "Thread.h"
+#include "noncopyable.h"
 
 //封装了一个可以创建IO线程的线程类，主要用于Eventloop线程池
 class EventLoopThread : noncopyable {
