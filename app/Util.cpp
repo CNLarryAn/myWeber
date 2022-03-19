@@ -1,6 +1,7 @@
 #include "Util.h"
 #include <unistd.h>
 
+const int MAX_BUFF = 4096;
 ssize_t writen(int fd, std::string &sbuff) {
     size_t nleft = sbuff.size();
     ssize_t nwritten = 0;
@@ -29,4 +30,28 @@ ssize_t writen(int fd, std::string &sbuff) {
     else
         sbuff = sbuff.substr(writeSum);
     return writeSum;
+}
+
+ssize_t readn(int fd, std::string &inBuffer) {
+  ssize_t nread = 0;
+  ssize_t readSum = 0;
+  while (true) {
+    char buff[MAX_BUFF];
+    if ((nread = read(fd, buff, MAX_BUFF)) < 0) {
+      if (errno == EINTR)
+        continue;
+      else if (errno == EAGAIN) {
+        return readSum;
+      } else {
+        perror("read error");
+        return -1;
+      }
+    } else if (nread == 0) {
+      break;
+    }
+
+    inBuffer += std::string(buff, buff + nread);
+
+  }
+  return readSum;
 }
